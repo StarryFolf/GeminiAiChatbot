@@ -13,6 +13,7 @@ func ConversationRoute(app *fiber.App) {
 		artworkGroupId := artworkGroup.Group("/:conversationId")
 		{
 			artworkGroupId.Get("/", controller.GetConversationById)
+			artworkGroupId.Get("/messages", controller.GetMessagesOfConversation)
 		}
 	}
 }

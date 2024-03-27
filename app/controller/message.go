@@ -64,6 +64,14 @@ func CreateMessage(ctx *fiber.Ctx) error {
 		return helper.ResponseWithError(ctx, fiber.StatusBadRequest, "Failed to validate the request!")
 	}
 
+	var conversation *entities.Conversation
+
+	err = db.First(&conversation, conversationId).Error
+	if err != nil {
+		logr.Fatalf("Cannot find conversation: %v", err)
+		return helper.ResponseWithError(ctx, fiber.StatusNotFound, "Conversation not found.")
+	}
+
 	var messages []*entities.Message
 	condition := "conversation_id = ?"
 	db.Model(messages).Where(condition, conversationId).Find(&messages).Order("sent_time ASC")
@@ -128,5 +136,37 @@ func CreateMessage(ctx *fiber.Ctx) error {
 	}
 
 	logr.WithField("response", response).Info("Create message response")
+	return ctx.Status(fiber.StatusOK).JSON(response)
+}
+
+func GetMessagesOfConversation(ctx *fiber.Ctx) error {
+	db := database.GetDB()
+	logger.SetUpLogger()
+	logr := logger.GetLogger()
+
+	conversationId, err := uuid.Parse(ctx.Params("conversationId"))
+	if err != nil {
+		logr.Errorf("Failed to parse conversation Id: %v", err)
+		return helper.ResponseWithError(ctx, fiber.StatusBadRequest, "Failed to parse the request!")
+	}
+
+	var conversation *entities.Conversation
+
+	err = db.First(&conversation, conversationId).Error
+	if err != nil {
+		logr.Fatalf("Cannot find conversation: %v", err)
+		return helper.ResponseWithError(ctx, fiber.StatusNotFound, "Conversation not found.")
+	}
+
+	var messages []*entities.Message
+	condition := "conversation_id = ?"
+	db.Model(messages).Where(condition, conversationId).Find(&messages).Order("sent_time ASC")
+
+	response := models.BaseResponse{
+		ResultMessage: "Success",
+		Data:          messages,
+	}
+
+	logr.WithField("response", response).Info("Get all messages of conversation response")
 	return ctx.Status(fiber.StatusOK).JSON(response)
 }
